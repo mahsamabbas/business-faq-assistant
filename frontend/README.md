@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend — Business FAQ Assistant
 
-## Getting Started
+Next.js chat UI for the FAQ RAG demo. It only calls the FastAPI backend — never Gemini.
 
-First, run the development server:
+## Requirements
+
+- Node.js 20+ (22 recommended)
+- Backend running on `http://localhost:8000` (or the URL you set)
+
+## Setup
+
+```bash
+cd frontend
+npm install
+cp .env.example .env.local
+```
+
+`.env.local`:
+
+```
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+## Run
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`. Start the backend first so `/status`, `/chat`, and `/upload` work.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## What the UI does
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Shows the active FAQ filename and source from `GET /status`
+- Sends chat with at most the last three prior messages to `POST /chat`
+- Shows source excerpts under supported answers
+- Uploads a `.txt` or `.md` FAQ via `POST /upload` and clears the chat on success
+- Surfaces 400 validation errors and 503 “Answer service unavailable”
 
-## Learn More
+## Scripts
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run dev      # development server
+npm run build    # production build
+npm run start    # serve production build
+npm run lint     # ESLint
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Layout
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+frontend/
+  src/app/       Chat page and layout
+  src/lib/api.ts Backend client helpers
+  .env.example
+```
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See the root [README](../README.md) for full-stack setup and known limitations.
