@@ -31,12 +31,17 @@ class IndexStore:
         self._collection = None
         self._filename: str | None = None
         self._source: str | None = None
+        self._old_name = f"{self._prefix}_old"
+        # _lock serializes builds; _state_lock guards (collection, filename, source) for swaps and reads.
         self._lock = threading.Lock()
+        self._state_lock = threading.Lock()
 
     def status(self) -> StatusResponse:
-        if self._collection is None or self._filename is None or self._source is None:
+        with self._state_lock:
+            collection, filename, source = self._collection, self._filename, self._source
+        if collection is None or filename is None or source is None:
             raise IndexBuildError("No FAQ index is loaded.")
-        return StatusResponse(filename=self._filename, source=self._source)
+        return StatusResponse(filename=filename, source=source)
 
     def load_sample(self, api_key: str) -> None:
         text = SAMPLE_FAQ_PATH.read_text(encoding="utf-8")
@@ -46,14 +51,19 @@ class IndexStore:
         return self._build_and_swap(filename, "upload", text, api_key)
 
     def retrieve(self, query: str, api_key: str) -> list[tuple[str, float]]:
-        collection = self._collection
-        if collection is None:
-            return []
+        with self._state_lock:
+            if self._collection is None:
+                return []
         query_vec = embed_texts([query], api_key)[0]
-        result = collection.query(
-            query_embeddings=[query_vec],
-            n_results=min(TOP_K, collection.count()) or 1,
-        )
+        # Query under the swap lock so the collection cannot be renamed/deleted mid-query.
+        with self._state_lock:
+            collection = self._collection
+            if collection is None:
+                return []
+            result = collection.query(
+                query_embeddings=[query_vec],
+                n_results=min(TOP_K, collection.count()) or 1,
+            )
         docs = result["documents"][0]
         distances = result["distances"][0]
         # Cosine distance d is in [0, 2]; similarity = 1 - d, clamped to [0, 1].
@@ -83,11 +93,29 @@ class IndexStore:
                 raise IndexBuildError(f"Could not build FAQ index: {exc}") from exc
 
             # Swap only after the new collection is fully built.
-            self._drop(self._active_name)
-            nxt.modify(name=self._active_name)
-            self._collection = nxt
-            self._filename = filename
-            self._source = source
+            with self._state_lock:
+                self._drop(self._old_name)
+                old = self._collection
+                if old is not None:
+                    try:
+                        old.modify(name=self._old_name)
+                    except Exception as exc:
+                        self._drop(self._next_name)
+                        raise IndexBuildError(f"Could not swap FAQ index: {exc}") from exc
+                try:
+                    nxt.modify(name=self._active_name)
+                except Exception as exc:
+                    if old is not None:
+                        try:
+                            old.modify(name=self._active_name)
+                        except Exception:
+                            pass
+                    self._drop(self._next_name)
+                    raise IndexBuildError(f"Could not swap FAQ index: {exc}") from exc
+                self._collection = nxt
+                self._filename = filename
+                self._source = source
+                self._drop(self._old_name)
             return StatusResponse(filename=filename, source=source)
 
     def _drop(self, name: str) -> None:
