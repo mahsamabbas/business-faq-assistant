@@ -28,7 +28,11 @@ def answer_question(
     if not api_key:
         raise ServiceUnavailableError("Answer service unavailable.")
 
-    hits = store.retrieve(search_text, api_key)
+    try:
+        hits = store.retrieve(search_text, api_key)
+    except Exception as exc:  # noqa: BLE001 — surface embedding failures as 503
+        raise ServiceUnavailableError("Answer service unavailable.") from exc
+
     best = hits[0][1] if hits else 0.0
     if best < SIMILARITY_CUTOFF:
         return ChatResponse(answer=REFUSAL_MESSAGE, refused=True, excerpts=[])

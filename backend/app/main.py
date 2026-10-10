@@ -33,7 +33,7 @@ def create_app(store: IndexStore | None = None) -> FastAPI:
     app = FastAPI(title="Business FAQ Assistant", lifespan=lifespan)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000"],
+        allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
         allow_methods=["*"],
         allow_headers=["*"],
     )

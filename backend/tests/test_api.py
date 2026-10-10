@@ -90,6 +90,32 @@ def test_upload_rejects_pdf_keeps_status(monkeypatch):
     assert client.get("/status").json()["filename"] == "sample_faq.md"
 
 
+def test_chat_retrieve_failure(monkeypatch):
+    monkeypatch.setenv("GOOGLE_API_KEY", "test-key")
+
+    class FakeStore:
+        def status(self):
+            from app.models import StatusResponse
+
+            return StatusResponse(filename="sample_faq.md", source="sample")
+
+        def load_sample(self, api_key):
+            return None
+
+        def retrieve(self, query, api_key):
+            raise RuntimeError("embedding API failed")
+
+    monkeypatch.setattr(
+        "app.answer.generate_answer",
+        lambda *a, **k: "Returns are accepted within 30 days.",
+    )
+    app = create_app(store=FakeStore())
+    client = TestClient(app)
+    res = client.post("/chat", json={"message": "returns?", "history": []})
+    assert res.status_code == 503
+    assert "30 days" not in res.text.lower()
+
+
 def test_chat_missing_key(monkeypatch):
     monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
     from app.main import create_app
