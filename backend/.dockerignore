@@ -1,0 +1,13 @@
+.venv
+.venv312
+__pycache__
+.pytest_cache
+.mypy_cache
+.env
+.env.*
+!.env.example
+tests
+scripts
+*.pyc
+.DS_Store
+README.md

@@ -8,6 +8,34 @@ A small retrieval-augmented chat demo: ask questions about one FAQ file at a tim
 - **Frontend:** Next.js, TypeScript, Tailwind CSS
 - The browser talks only to FastAPI; it never calls Gemini directly.
 
+## Run with Docker
+
+Needs Docker Desktop running, plus `backend/.env` with `GOOGLE_API_KEY`.
+
+```bash
+# from the repo root
+docker compose up --build
+```
+
+Then open:
+
+- App: http://localhost:3000
+- API: http://localhost:8000
+
+If port 3000 is already used (for example by `npm run dev`):
+
+```bash
+FRONTEND_PORT=3001 docker compose up --build
+```
+
+Stop with `Ctrl+C`, or: `docker compose down`.
+
+On macOS, if `docker` is not found after installing Docker Desktop:
+
+```bash
+export PATH="/Applications/Docker.app/Contents/Resources/bin:$PATH"
+```
+
 ## Backend setup
 
 Requires **Python 3.11 or newer** (3.12 is fine). Tests were run with 3.12.
