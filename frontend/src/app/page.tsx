@@ -283,7 +283,7 @@ export default function Home() {
                 style={{ animationDelay: `${Math.min(i, 6) * 40}ms` }}
               >
                 <div
-                  className={`max-w-[min(100%,34rem)] px-4 py-3 text-[0.95rem] leading-relaxed shadow-sm ${
+                  className={`chat-copyable max-w-[min(100%,34rem)] px-4 py-3 text-[0.95rem] leading-relaxed shadow-sm ${
                     isUser
                       ? "rounded-[1.25rem_1.25rem_0.35rem_1.25rem] bg-teal-deep text-white"
                       : refused
@@ -300,7 +300,7 @@ export default function Home() {
                       {refused ? "Not in FAQ" : "From FAQ"}
                     </p>
                   )}
-                  <p className="whitespace-pre-wrap">{m.content}</p>
+                  <p className="chat-copyable whitespace-pre-wrap">{m.content}</p>
                 </div>
               </div>
             );

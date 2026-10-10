@@ -1,7 +1,11 @@
+import logging
+
 from app.config import MAX_HISTORY, REFUSAL_MESSAGE, SIMILARITY_CUTOFF
 from app.gemini_clients import generate_answer, get_api_key
 from app.index_store import IndexStore
 from app.models import ChatMessage, ChatResponse, Excerpt
+
+logger = logging.getLogger(__name__)
 
 
 class BlankMessageError(Exception):
@@ -31,6 +35,7 @@ def answer_question(
     try:
         hits = store.retrieve(search_text, api_key)
     except Exception as exc:  # noqa: BLE001 — surface embedding failures as 503
+        logger.exception("FAQ retrieval failed")
         raise ServiceUnavailableError("Answer service unavailable.") from exc
 
     best = hits[0][1] if hits else 0.0
@@ -41,6 +46,7 @@ def answer_question(
     try:
         answer = generate_answer(cleaned, recent, excerpt_texts, api_key).strip()
     except Exception as exc:  # noqa: BLE001 — surface provider failures as 503
+        logger.exception("FAQ answer generation failed")
         raise ServiceUnavailableError("Answer service unavailable.") from exc
 
     if answer == REFUSAL_MESSAGE:

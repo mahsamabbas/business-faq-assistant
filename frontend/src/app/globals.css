@@ -47,12 +47,20 @@ body {
   margin: 0;
   color: var(--ink);
   font-family: var(--font-body), system-ui, sans-serif;
+  -webkit-user-select: text;
+  user-select: text;
   background:
     radial-gradient(1200px 600px at 8% -10%, rgba(143, 212, 194, 0.55), transparent 55%),
     radial-gradient(900px 500px at 95% 0%, rgba(232, 93, 76, 0.22), transparent 50%),
     radial-gradient(700px 420px at 70% 100%, rgba(242, 193, 78, 0.28), transparent 55%),
     linear-gradient(165deg, #f7fbf9 0%, #e8f3ef 48%, #f3ebe4 100%);
   background-attachment: fixed;
+}
+
+.chat-copyable {
+  -webkit-user-select: text;
+  user-select: text;
+  cursor: text;
 }
 
 body::before {
