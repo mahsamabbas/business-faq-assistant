@@ -33,7 +33,7 @@ Open `http://localhost:3000`. Start the backend first so `/status`, `/chat`, and
 
 - Shows the active FAQ filename and source from `GET /status`
 - Sends chat with at most the last three prior messages to `POST /chat`
-- Shows source excerpts under supported answers
+- Labels answers as from the FAQ (or not in FAQ) without dumping raw excerpts
 - Uploads a `.txt` or `.md` FAQ via `POST /upload` and clears the chat on success
 - Surfaces 400 validation errors and 503 “Answer service unavailable”
 
