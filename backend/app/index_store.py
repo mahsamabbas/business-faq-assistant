@@ -14,7 +14,7 @@ from app.config import (
     TOP_K,
 )
 from app.gemini_clients import embed_texts
-from app.models import StatusResponse
+from app.models import DocumentResponse, StatusResponse
 
 
 class IndexBuildError(Exception):
@@ -31,8 +31,9 @@ class IndexStore:
         self._collection = None
         self._filename: str | None = None
         self._source: str | None = None
+        self._text: str | None = None
         self._old_name = f"{self._prefix}_old"
-        # _lock serializes builds; _state_lock guards (collection, filename, source) for swaps and reads.
+        # _lock serializes builds; _state_lock guards active document state for swaps and reads.
         self._lock = threading.Lock()
         self._state_lock = threading.Lock()
 
@@ -42,6 +43,13 @@ class IndexStore:
         if collection is None or filename is None or source is None:
             raise IndexBuildError("No FAQ index is loaded.")
         return StatusResponse(filename=filename, source=source)
+
+    def document(self) -> DocumentResponse:
+        with self._state_lock:
+            filename, source, text = self._filename, self._source, self._text
+        if filename is None or source is None or text is None:
+            raise IndexBuildError("No FAQ index is loaded.")
+        return DocumentResponse(filename=filename, source=source, text=text)
 
     def load_sample(self, api_key: str) -> None:
         text = SAMPLE_FAQ_PATH.read_text(encoding="utf-8")
@@ -115,6 +123,7 @@ class IndexStore:
                 self._collection = nxt
                 self._filename = filename
                 self._source = source
+                self._text = text
                 self._drop(self._old_name)
             return StatusResponse(filename=filename, source=source)
 

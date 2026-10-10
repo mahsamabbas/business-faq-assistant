@@ -37,6 +37,7 @@ API: `http://localhost:8000`
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` | `/status` | Active FAQ filename and source (`sample` \| `upload`) |
+| `GET` | `/document` | Active FAQ filename, source, and full text for preview |
 | `POST` | `/upload` | Multipart field `file` (`.txt` / `.md`); replaces the index |
 | `POST` | `/chat` | JSON `{ "message", "history" }` → answer, refused flag, excerpts |
 

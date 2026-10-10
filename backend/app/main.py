@@ -11,7 +11,7 @@ from app.answer import (
 )
 from app.gemini_clients import get_api_key
 from app.index_store import IndexBuildError, IndexStore
-from app.models import ChatRequest, ChatResponse, StatusResponse
+from app.models import ChatRequest, ChatResponse, DocumentResponse, StatusResponse
 from app.validation import ValidationError, validate_faq_bytes
 
 load_dotenv()
@@ -42,6 +42,13 @@ def create_app(store: IndexStore | None = None) -> FastAPI:
     def status() -> StatusResponse:
         try:
             return index.status()
+        except IndexBuildError as exc:
+            raise HTTPException(status_code=503, detail=UNAVAILABLE_DETAIL) from exc
+
+    @app.get("/document", response_model=DocumentResponse)
+    def document() -> DocumentResponse:
+        try:
+            return index.document()
         except IndexBuildError as exc:
             raise HTTPException(status_code=503, detail=UNAVAILABLE_DETAIL) from exc
 

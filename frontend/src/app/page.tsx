@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   ApiError,
+  fetchDocument,
   fetchStatus,
   sendChat,
   uploadFaq,
   type ChatMessage,
+  type FaqDocument,
   type Status,
 } from "@/lib/api";
 
@@ -27,8 +29,13 @@ export default function Home() {
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerLoading, setViewerLoading] = useState(false);
+  const [faqDoc, setFaqDoc] = useState<FaqDocument | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const titleId = useId();
 
   useEffect(() => {
     fetchStatus()
@@ -39,6 +46,20 @@ export default function Home() {
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, sending]);
+
+  useEffect(() => {
+    if (!viewerOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setViewerOpen(false);
+    };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    closeRef.current?.focus();
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [viewerOpen]);
 
   function handleError(e: unknown) {
     if (e instanceof ApiError && e.status === 503) {
@@ -53,6 +74,21 @@ export default function Home() {
   function clearErrors() {
     setError(null);
     setUnavailable(false);
+  }
+
+  async function openViewer() {
+    clearErrors();
+    setViewerOpen(true);
+    setViewerLoading(true);
+    try {
+      const doc = await fetchDocument();
+      setFaqDoc(doc);
+    } catch (err) {
+      setViewerOpen(false);
+      handleError(err);
+    } finally {
+      setViewerLoading(false);
+    }
   }
 
   async function ask(text: string) {
@@ -91,6 +127,7 @@ export default function Home() {
       const next = await uploadFaq(file);
       setMessages([]);
       setStatus(next);
+      setFaqDoc(null);
       setFileName(null);
       if (fileRef.current) fileRef.current.value = "";
     } catch (err) {
@@ -123,7 +160,7 @@ export default function Home() {
 
         <div className="rounded-[1.5rem] border border-[var(--line)] bg-white/70 p-4 shadow-[var(--shadow)] backdrop-blur-md">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <div>
+            <div className="min-w-0">
               <p className="text-xs font-semibold tracking-wide text-teal uppercase">
                 Active source
               </p>
@@ -131,17 +168,27 @@ export default function Home() {
                 {status?.filename ?? "Loading…"}
               </p>
             </div>
-            {status && (
-              <span
-                className={`shrink-0 rounded-md px-2.5 py-1 text-xs font-bold tracking-wide uppercase ${
-                  status.source === "sample"
-                    ? "bg-mint/40 text-teal-deep"
-                    : "bg-sun/35 text-ink"
-                }`}
+            <div className="flex shrink-0 items-center gap-2">
+              {status && (
+                <span
+                  className={`rounded-md px-2.5 py-1 text-xs font-bold tracking-wide uppercase ${
+                    status.source === "sample"
+                      ? "bg-mint/40 text-teal-deep"
+                      : "bg-sun/35 text-ink"
+                  }`}
+                >
+                  {status.source}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={openViewer}
+                disabled={!status}
+                className="rounded-md border border-teal/25 bg-white px-2.5 py-1 text-xs font-bold tracking-wide text-teal-deep uppercase transition hover:border-coral/40 hover:text-coral-deep disabled:cursor-not-allowed disabled:opacity-40"
               >
-                {status.source}
-              </span>
-            )}
+                View
+              </button>
+            </div>
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -293,6 +340,69 @@ export default function Home() {
           </div>
         </form>
       </main>
+
+      {viewerOpen && (
+        <div
+          className="modal-backdrop fixed inset-0 z-50 flex items-end justify-center bg-[#102a2d]/55 p-3 backdrop-blur-sm sm:items-center sm:p-6"
+          role="presentation"
+          onClick={() => setViewerOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            className="modal-panel flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-[1.6rem] border border-white/40 bg-[linear-gradient(165deg,#f7fbf9_0%,#ffffff_45%,#fff6f1_100%)] shadow-[0_30px_80px_rgba(16,42,45,0.35)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative border-b border-[var(--line)] px-5 py-4 sm:px-6">
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-teal via-mint to-coral" />
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold tracking-[0.18em] text-teal uppercase">
+                    FAQ preview
+                  </p>
+                  <h2
+                    id={titleId}
+                    className="mt-1 truncate font-[family-name:var(--font-display)] text-2xl font-extrabold text-ink"
+                  >
+                    {faqDoc?.filename ?? status?.filename ?? "FAQ file"}
+                  </h2>
+                  {faqDoc && (
+                    <p className="mt-1 text-sm text-ink-soft">
+                      Source:{" "}
+                      <span className="font-semibold text-teal-deep">
+                        {faqDoc.source}
+                      </span>
+                      {" · "}
+                      {faqDoc.text.length.toLocaleString()} characters
+                    </p>
+                  )}
+                </div>
+                <button
+                  ref={closeRef}
+                  type="button"
+                  onClick={() => setViewerOpen(false)}
+                  aria-label="Close FAQ preview"
+                  className="rounded-xl border border-teal/20 bg-white px-3 py-2 text-sm font-bold text-ink transition hover:border-coral/40 hover:text-coral-deep"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+              {viewerLoading && (
+                <p className="text-sm text-ink-soft">Loading FAQ…</p>
+              )}
+              {!viewerLoading && faqDoc && (
+                <pre className="whitespace-pre-wrap rounded-2xl border border-teal/10 bg-paper/90 p-4 font-[family-name:var(--font-body)] text-[0.95rem] leading-7 text-ink shadow-inner">
+                  {faqDoc.text}
+                </pre>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

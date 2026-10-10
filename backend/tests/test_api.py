@@ -11,11 +11,21 @@ def _client(monkeypatch, hits=None):
         def __init__(self):
             self._filename = "sample_faq.md"
             self._source = "sample"
+            self._text = "You may return unused items within 30 days of delivery."
 
         def status(self):
             from app.models import StatusResponse
 
             return StatusResponse(filename=self._filename, source=self._source)
+
+        def document(self):
+            from app.models import DocumentResponse
+
+            return DocumentResponse(
+                filename=self._filename,
+                source=self._source,
+                text=self._text,
+            )
 
         def load_sample(self, api_key):
             return None
@@ -25,6 +35,7 @@ def _client(monkeypatch, hits=None):
 
             self._filename = filename
             self._source = "upload"
+            self._text = text
             return StatusResponse(filename=filename, source="upload")
 
         def retrieve(self, query, api_key):
@@ -44,6 +55,16 @@ def test_status_sample(monkeypatch):
     res = client.get("/status")
     assert res.status_code == 200
     assert res.json()["filename"] == "sample_faq.md"
+
+
+def test_document_returns_text(monkeypatch):
+    client, _ = _client(monkeypatch)
+    res = client.get("/document")
+    assert res.status_code == 200
+    body = res.json()
+    assert body["filename"] == "sample_faq.md"
+    assert body["source"] == "sample"
+    assert "30 days" in body["text"]
 
 
 def test_chat_normal(monkeypatch):

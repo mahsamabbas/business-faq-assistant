@@ -1,6 +1,7 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export type Status = { filename: string; source: "sample" | "upload" };
+export type FaqDocument = Status & { text: string };
 export type ChatMessage = { role: "user" | "assistant"; content: string };
 export type ChatResult = {
   answer: string;
@@ -45,6 +46,10 @@ async function request(url: string, init: RequestInit | undefined, fallback: str
 
 export function fetchStatus(): Promise<Status> {
   return request(`${API_URL}/status`, undefined, "Failed to load status");
+}
+
+export function fetchDocument(): Promise<FaqDocument> {
+  return request(`${API_URL}/document`, undefined, "Failed to load FAQ document");
 }
 
 export function uploadFaq(file: File): Promise<Status> {
