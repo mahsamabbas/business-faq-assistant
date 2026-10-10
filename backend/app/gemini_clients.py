@@ -1,6 +1,6 @@
 import os
 
-from app.config import REFUSAL_MESSAGE
+from app.config import CHAT_MODEL, EMBED_MODEL, REFUSAL_MESSAGE
 from app.models import ChatMessage
 
 
@@ -16,7 +16,7 @@ def embed_texts(texts: list[str], api_key: str) -> list[list[float]]:
     client = genai.Client(api_key=api_key)
     vectors: list[list[float]] = []
     for text in texts:
-        result = client.models.embed_content(model="text-embedding-004", contents=text)
+        result = client.models.embed_content(model=EMBED_MODEL, contents=text)
         vectors.append(list(result.embeddings[0].values))
     return vectors
 
@@ -43,6 +43,6 @@ def generate_answer(
         "Answer:"
     )
     client = genai.Client(api_key=api_key)
-    response = client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
+    response = client.models.generate_content(model=CHAT_MODEL, contents=prompt)
     text = (response.text or "").strip()
     return text or REFUSAL_MESSAGE

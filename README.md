@@ -4,7 +4,7 @@ A small retrieval-augmented chat demo: ask questions about one FAQ file at a tim
 
 ## Stack
 
-- **Backend:** Python 3.11+, FastAPI, LlamaIndex, Chroma (in-memory), Google Gemini (embeddings + chat), pytest
+- **Backend:** Python 3.11+, FastAPI, LlamaIndex, Chroma (in-memory), Google Gemini (embeddings: `gemini-embedding-001`, chat: `gemini-3.6-flash`; override with `GEMINI_EMBED_MODEL` / `GEMINI_CHAT_MODEL`), pytest
 - **Frontend:** Next.js, TypeScript, Tailwind CSS
 - The browser talks only to FastAPI; it never calls Gemini directly.
 
@@ -18,7 +18,7 @@ python3.12 -m venv .venv    # or: python3.11 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env
-# Edit .env and set GOOGLE_API_KEY (Google AI Studio)
+# Edit .env and set GOOGLE_API_KEY (Google AI Studio); model env vars are optional
 uvicorn app.main:app --reload --port 8000
 ```
 
